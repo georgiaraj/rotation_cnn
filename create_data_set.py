@@ -14,7 +14,7 @@ def get_arguments():
     parser.add_argument('--data_im_size', type=int, default=200, help='Square size images will be resized to.')
     parser.add_argument('--num_rots', type=int, default=5, help='Number of rotations to add for each image.')
     parser.add_argument('--image_format', type=str, default='jpg', help='Format of images to use.')
-    parser.add_argument('--save_images', action='store_true', help='If set to false don\'t save images in viewable form in HDF5 file.')
+    parser.add_argument('--save_images', action='store_true', help='Also save images in viewable form in HDF5 file along image data.')
 
 
     return parser.parse_args()
