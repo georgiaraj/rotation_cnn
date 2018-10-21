@@ -11,7 +11,7 @@ def get_arguments():
     parser = argparse.ArgumentParser(description='Generates rotations of images found in image_folder and saves pairs of images (original and rotated) with the rotation angle to HDF5 file.')
     parser.add_argument('--image_folder', type=str, required=True, help='Image folder for generating dataset.')
     parser.add_argument('--output_file', type=str, required=True, help='Output file for dataset')
-    parser.add_argument('--data_im_size', type=int, default=400, help='Square size images will be resized to.')
+    parser.add_argument('--data_im_size', type=int, default=200, help='Square size images will be resized to.')
     parser.add_argument('--num_rots', type=int, default=5, help='Number of rotations to add for each image.')
     parser.add_argument('--image_format', type=str, default='jpg', help='Format of images to use.')
     parser.add_argument('--save_images', action='store_true', help='If set to false don\'t save images in viewable form in HDF5 file.')
@@ -23,7 +23,7 @@ def add_image_rotations(image):
 
     print('Add',num_rots,'pairs of images for',image,'to dataset.')
 
-    image_ind = dset_images.shape[2]
+    image_ind = dset_image_data.shape[0]
 
     # Increase the dataset size according to the number of patches returned
     if save_images:
@@ -72,6 +72,9 @@ if __name__ == "__main__":
 
     print('Image folder:',image_folder)
     print('Output file:',hdf5_file)
+
+    if save_images:
+        print('Saving viewable images alongside image data')
 
     # Read in appropriate images from folder for extracting patches
     image_files = glob.glob(image_folder+'/*.'+image_format)

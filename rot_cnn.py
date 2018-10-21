@@ -15,7 +15,7 @@ import math
 class cnn(object):
     ###############################################################################
     # Methods currently established as beta/stable
-    def __init__(self, model_name, model_path, im_size, batch_size=128, nepochs=100, use_bn=True, lr=0.001, decay=1e-5, pdrop_conv=0., pdrop_fc=0., fc_layers=[512], fcn_head_row=None, fcn_head_col=None, padding='same'):
+    def __init__(self, model_name, model_path, batch_size=128, nepochs=100, use_bn=True, lr=0.001, decay=1e-5, pdrop_conv=0., pdrop_fc=0., fc_layers=[512], fcn_head_row=None, fcn_head_col=None, padding='same'):
 
         if padding != 'same' and padding != 'valid':
             print('ParamError: Conv2D padding can either be \'valid\' or \'same\'.')
@@ -27,9 +27,7 @@ class cnn(object):
             padding_text = '_valid'
 
         self.model_name = model_name
-        self.model_path = model_path+mode_text+mode_fullconv+padding_text+'_batch'+str(batch_size)+'_nepochs'+str(nepochs)+'_bn'+str(use_bn)+'_dropconv'+str(pdrop_conv)+'_dropfc'+str(pdrop_fc)+'.cnn'
-        self.patch_size = patch_size
-        self.multi_offset = multi_offset
+        self.model_path = model_path+padding_text+'_batch'+str(batch_size)+'_nepochs'+str(nepochs)+'_bn'+str(use_bn)+'_dropconv'+str(pdrop_conv)+'_dropfc'+str(pdrop_fc)+'.cnn'
         self.batch_size = batch_size # Number of training images used per iteration
         self.nepochs = nepochs # Max number of epochs in training; 1 epoch is when we pass through all training data
         self.use_bn = use_bn # Triggers batch normalization just before the activation functions on the inner layer; NOT applied in readout layer
@@ -57,7 +55,7 @@ class cnn(object):
         K.set_session(sess)
 
         # Build the graph
-        #img = tf.placeholder(tf.float32, shape=(None, patch_size))
+        #img = tf.placeholder(tf.float32, shape=(None, image_size))
         nrows = images.shape[1]
         ncols = images.shape[2]
         nchannels = 1
@@ -118,7 +116,7 @@ class cnn(object):
         # Step 1. Build inner convnet layers
         model = Sequential()
 
-        model.add(Conv2D(32, (3, 3), padding=padding, input_shape=patch_shape, name=self.model_name+'_conv1'))
+        model.add(Conv2D(32, (3, 3), padding=padding, input_shape=image_shape, name=self.model_name+'_conv1'))
         if self.use_bn:  # Important! Conv2D uses default data_format="channels_last". For that case BatchNormalization(axis=-1 (default))
             model.add(BatchNormalization(name=self.model_name+'_bn1'))
         model.add(Activation('relu', name=self.model_name+'_act1'))
