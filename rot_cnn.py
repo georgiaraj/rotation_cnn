@@ -105,28 +105,17 @@ class cnn(object):
     def summary(self):
         self.model.summary()
 
-    def test(self, patches, use_beta=False):
-        labels = self.model.predict(patches, batch_size=self.batch_size, verbose=1)
+    def test(self, images):
+        labels = self.model.predict(images, batch_size=self.batch_size, verbose=1)
 
         return labels
 
     def get_cnn(self):
         return self.model
 
-    # patch_shape = (nrows, ncols, nchannels)
-    def __build_graph(self, patch_shape, padding='same', fcn_head_row=None, fcn_head_col=None):
+    # image_shape = (nrows, ncols, nchannels)
+    def __build_graph(self, image_shape, padding='same', fcn_head_row=None, fcn_head_col=None):
         # Step 1. Build inner convnet layers
-        model = self.__build_convnet2d_base(patch_shape, padding)
-        # Step 2. Append with outer network convolutional layers; (a). Fully convolutional
-        if self.use_fullconv:
-            model = self.__add_outer_convnet2d_regression(model, fcn_head_row, fcn_head_col)
-        # (b). Fully connected
-        else:
-            model = self.__add_outer_fcnet_regression(model, patch_shape)
-
-        return model
-
-    def __build_convnet2d_base(self, patch_shape, padding = 'same'):
         model = Sequential()
 
         model.add(Conv2D(32, (3, 3), padding=padding, input_shape=patch_shape, name=self.model_name+'_conv1'))
@@ -175,78 +164,18 @@ class cnn(object):
         if self.pdrop_conv > 0.:
             model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop4'))
 
-        return model
-
-    # Regressor with fully connected layers. Assumes that model, is inner convnet2d
-    def __add_outer_fcnet_regression(self, model, patch_shape):
-        # Sanity checks
-        self.__checks_outer_layers(model)
-
         # Dense fully connected layers
         model.add(Flatten(), name=self.model_name+'_flat1')
-        for idx, n_nodes in enumerate(self.fc_layers):
-            model = self.__add_fc_layer(idx, model, n_nodes)
 
-        # Output layer
-        if self.multi_offset:
-            model.add(Dense(patch_shape[0] * patch_shape[1] * 2, name=self.model_name+'_output'))
-        else:
-            model.add(Dense(2, name=self.model_name+'_output'))
+        for idx, n_nodes in enumerate(self.fc_layers):
+            model.add(Dense(n_nodes, name=self.model_name+'_fc'+str(idx)))
+            if self.use_bn:
+                model.add(BatchNormalization(name=self.model_name+'_bn_fc'+str(idx)))
+            model.add(Activation('relu', name=self.model_name+'_act_fc'+str(idx)))
+            if self.pdrop_fc > 0.:
+                model.add(Dropout(self.pdrop_fc, name=self.model_name+'_drop_fc'+str(idx)))
+
+        model.add(Dense(1, name=self.model_name+'_output'))
         model.add(Activation('linear', name=self.model_name+'_act_out'))
 
         return model
-
-    def __add_fc_layer(self, idx, model, units):
-        model.add(Dense(units, name=self.model_name+'_fc'+str(idx)))
-        if self.use_bn:
-            model.add(BatchNormalization(name=self.model_name+'_bn_fc'+str(idx)))
-        model.add(Activation('relu', name=self.model_name+'_act_fc'+str(idx)))
-        if self.pdrop_fc > 0.:
-            model.add(Dropout(self.pdrop_fc, name=self.model_name+'_drop_fc'+str(idx)))
-
-        return model
-
-    # Regressor with fully convolutional layers. Assumes that model, is inner convnet2d
-    def __add_outer_convnet2d_regression(self, model, fcn_head_row=None, fcn_head_col=None):
-        # Sanity checks
-        self.__checks_outer_layers(model)
-
-        # Get previous layer shape
-        prv_layer = model.layers[-1]
-        layer_shape = prv_layer.output_shape
-        n_rows_lastfilter = layer_shape[1]
-        n_cols_lastfilter = layer_shape[2]
-
-        if not fcn_head_row is None and not fcn_head_col is None:#Just to make sure that the user does not set only one of those
-            n_rows_lastfilter = fcn_head_row
-            n_cols_lastfilter = fcn_head_col
-
-        # Build fully convolutional second inner part of the network, equivalent to the inner FC layers part
-        for index, n_nodes in enumerate(self.fc_layers):
-            if index == 0:
-                model.add(Conv2D(n_nodes, (n_rows_lastfilter, n_cols_lastfilter), name=self.model_name+'_conv_fcn'+str(index))) # Specially handle conv layer equivallent to the first inner FC layer
-            else:
-                model.add(Conv2D(n_nodes, (1, 1), name=self.model_name+'_conv_fcn'+str(index)))
-            if self.use_bn:
-                model.add(BatchNormalization(name=self.model_name+'_bn_fcn'+str(index)))
-            model.add(Activation('relu', name=self.model_name+'_act_fcn'+str(index)))
-            if self.pdrop_fc > 0.: #Note! Here This convlayer is equivalent to an FC layer; Thus assume the Dropout param for FCs
-                model.add(Dropout(self.pdrop_fc, name=self.model_name+'_drop_fcn'+str(index)))
-
-        # Add Output Conv2d layer
-        if len(self.fc_layers) == 0:
-            # !!We should test if this special case is legit; This is when no second inner layer part of the network is set
-            model.add(Conv2D(2, (n_rows_lastfilter, n_cols_lastfilter), name=self.model_name+'_fcn_output'))
-        else:
-            model.add(Conv2D(2,(1, 1), name=self.model_name+'_fcn_output'))
-
-        model.add(Activation('linear', name=self.model_name+'_fcn_output_act'))
-
-        return model
-
-    # Terminate if outer layer graph build checks fail
-    def __checks_outer_layers(self, model):
-        # Sanity check
-        if len(model.layers) == 0:
-            print('Error: Inner ConvNet2D is not initialized.')
-            sys.exit(0)

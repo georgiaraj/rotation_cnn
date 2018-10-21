@@ -14,6 +14,8 @@ def get_arguments():
     parser.add_argument('--data_im_size', type=int, default=400, help='Square size images will be resized to.')
     parser.add_argument('--num_rots', type=int, default=5, help='Number of rotations to add for each image.')
     parser.add_argument('--image_format', type=str, default='jpg', help='Format of images to use.')
+    parser.add_argument('--save_images', action='store_true', help='If set to false don\'t save images in viewable form in HDF5 file.')
+
 
     return parser.parse_args()
 
@@ -24,7 +26,8 @@ def add_image_rotations(image):
     image_ind = dset_images.shape[2]
 
     # Increase the dataset size according to the number of patches returned
-    dset_images.resize(dset_images.shape[2]+num_rots, axis=2)
+    if save_images:
+        dset_images.resize(dset_images.shape[2]+num_rots, axis=2)
     dset_image_data.resize(dset_image_data.shape[0]+num_rots, axis=0)
     dset_labels.resize(dset_labels.shape[0]+num_rots, axis=0)
 
@@ -45,8 +48,9 @@ def add_image_rotations(image):
         print('Image pair',image_ind,': image',image,'rotated by',str(angle))
 
         # Add both images and angle label to dataset
-        dset_images[:data_im_size,:,image_ind] = square_im
-        dset_images[data_im_size:,:,image_ind] = rotated
+        if save_images:
+            dset_images[:data_im_size,:,image_ind] = square_im
+            dset_images[data_im_size:,:,image_ind] = rotated
         dset_image_data[image_ind,:data_im_size,:] = square_im
         dset_image_data[image_ind,data_im_size:,:] = rotated
         dset_labels[image_ind] = angle
@@ -64,6 +68,7 @@ if __name__ == "__main__":
     data_im_size = args.data_im_size
     hdf5_file = args.output_file
     num_rots = args.num_rots
+    save_images = args.save_images
 
     print('Image folder:',image_folder)
     print('Output file:',hdf5_file)
@@ -80,15 +85,17 @@ if __name__ == "__main__":
 
     # Create HDF5 file and set up the data sets
     f = h5py.File(hdf5_file,'w')
-    dset_images = f.create_dataset("images",(data_im_size*2,data_im_size,0),maxshape=(data_im_size*2,data_im_size,None))
+
     dset_image_data = f.create_dataset("image_data",(0,data_im_size*2,data_im_size),maxshape=(None,data_im_size*2,data_im_size))
     dset_labels = f.create_dataset("rotations",(0,1),maxshape=(None,1))
 
-    # Set the image attributes
-    dset_images.attrs['CLASS'] = 'IMAGE'
-    dset_images.attrs['IMAGE_VERSION'] = '1.2'
-    dset_images.attrs['IMAGE_SUBCLASS'] =  'IMAGE_INDEXED'
-    dset_images.attrs['IMAGE_MINMAXRANGE'] = np.array([0,255], dtype=np.uint8)
+    if save_images:
+        dset_images = f.create_dataset("images",(data_im_size*2,data_im_size,0),maxshape=(data_im_size*2,data_im_size,None))
+        # Set the image attributes
+        dset_images.attrs['CLASS'] = 'IMAGE'
+        dset_images.attrs['IMAGE_VERSION'] = '1.2'
+        dset_images.attrs['IMAGE_SUBCLASS'] =  'IMAGE_INDEXED'
+        dset_images.attrs['IMAGE_MINMAXRANGE'] = np.array([0,255], dtype=np.uint8)
 
     # Add image files to the dataset
     for idx, im in enumerate(image_files):
