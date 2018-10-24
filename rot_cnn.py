@@ -15,7 +15,7 @@ import math
 class cnn(object):
     ###############################################################################
     # Methods currently established as beta/stable
-    def __init__(self, model_name, model_path, batch_size=128, nepochs=100, use_bn=True, lr=0.001, decay=1e-5, pdrop_conv=0., pdrop_fc=0., fc_layers=[512], fcn_head_row=None, fcn_head_col=None, padding='same'):
+    def __init__(self, model_name, model_path, batch_size=10, nepochs=100, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0., pdrop_fc=0., fc_layers=[10], padding='same'):
 
         if padding != 'same' and padding != 'valid':
             print('ParamError: Conv2D padding can either be \'valid\' or \'same\'.')
@@ -45,10 +45,10 @@ class cnn(object):
     def train(self, images, labels):
         # Divide data into training and validation samples in ratio 4:1
         ntrain = round(images.shape[0]*4/5)
-        patches_train = np.expand_dims(images[0:ntrain,:,:],axis=3)
-        labels_train = labels[0:ntrain,:]
-        patches_val = np.expand_dims(images[ntrain:images.shape[0],:,:],axis=3)
-        labels_val = labels[ntrain:images.shape[0],:]
+        images_train = np.expand_dims(images[0:ntrain,:,:],axis=3)
+        labels_train = labels[0:ntrain]
+        images_val = np.expand_dims(images[ntrain:images.shape[0],:,:],axis=3)
+        labels_val = labels[ntrain:images.shape[0]]
 
         # Setup in the tensorflow session
         sess = tf.Session()
@@ -76,13 +76,18 @@ class cnn(object):
         opt = keras.optimizers.Adam(lr=self.lr, decay=self.decay)
         print('Using Adam optimizer')
         print(opt.get_config())
+
+        #run_opts = tf.RunOptions(report_tensor_allocations_upon_oom = True)
+        #model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae'], options = run_opts)
         model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae'])
 
-        model.fit(patches_train, labels_train, batch_size=self.batch_size, epochs=self.nepochs, validation_data=(patches_val, labels_val), shuffle=True, callbacks=callbacks)
+        model.fit(images_train, labels_train, batch_size=self.batch_size, epochs=self.nepochs, validation_data=(images_val, labels_val), shuffle=True, callbacks=callbacks)
 
         # Save the model
         model.save(self.model_path)
         print('Saved trained model to',self.model_path)
+
+        #sess.close()
 
     def is_trained(self):
         if os.path.isfile(self.model_path):
@@ -112,7 +117,7 @@ class cnn(object):
         return self.model
 
     # image_shape = (nrows, ncols, nchannels)
-    def __build_graph(self, image_shape, padding='same', fcn_head_row=None, fcn_head_col=None):
+    def __build_graph(self, image_shape, padding='same'):
         # Step 1. Build inner convnet layers
         model = Sequential()
 
@@ -127,28 +132,18 @@ class cnn(object):
         if self.pdrop_conv > 0.:
             model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop1'))
 
-        model.add(Conv2D(32, (3, 3), padding=padding, name=self.model_name+'_conv3'))
-        if self.use_bn:
-            model.add(BatchNormalization(name=self.model_name+'_bn3'))
-        model.add(Activation('relu', name=self.model_name+'_act3'))
-        model.add(Conv2D(32, (3, 3), padding=padding, name=self.model_name+'_conv4'))
-        if self.use_bn:
-            model.add(BatchNormalization(name=self.model_name+'_bn4'))
-        model.add(Activation('relu', name=self.model_name+'_act4'))
-        model.add(MaxPooling2D(pool_size=(2, 2), name=self.model_name+'_mp1'))
-        if self.pdrop_conv > 0.:
-            model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop2'))
+        # model.add(Conv2D(32, (3, 3), padding=padding, name=self.model_name+'_conv3'))
+        # if self.use_bn:
+        #     model.add(BatchNormalization(name=self.model_name+'_bn3'))
+        # model.add(Activation('relu', name=self.model_name+'_act3'))
+        # model.add(Conv2D(32, (3, 3), padding=padding, name=self.model_name+'_conv4'))
+        # if self.use_bn:
+        #     model.add(BatchNormalization(name=self.model_name+'_bn4'))
+        # model.add(Activation('relu', name=self.model_name+'_act4'))
+        # model.add(MaxPooling2D(pool_size=(2, 2), name=self.model_name+'_mp1'))
+        # if self.pdrop_conv > 0.:
+        #     model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop2'))
 
-        model.add(Conv2D(64, (5, 5), padding=padding, name=self.model_name+'_conv5'))
-        if self.use_bn:
-            model.add(BatchNormalization(name=self.model_name+'_bn5'))
-        model.add(Activation('relu', name=self.model_name+'_act5'))
-        model.add(Conv2D(64, (5, 5), padding=padding, name=self.model_name+'_conv6'))
-        if self.use_bn:
-            model.add(BatchNormalization(name=self.model_name+'_bn6'))
-        model.add(Activation('relu', name=self.model_name+'_act6'))
-        if self.pdrop_conv > 0.:
-            model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop3'))
 
         model.add(Conv2D(64, (5, 5), padding=padding, name=self.model_name+'_conv7'))
         if self.use_bn:
@@ -163,7 +158,7 @@ class cnn(object):
             model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop4'))
 
         # Dense fully connected layers
-        model.add(Flatten(), name=self.model_name+'_flat1')
+        model.add(Flatten(name=self.model_name+'_flat1'))
 
         for idx, n_nodes in enumerate(self.fc_layers):
             model.add(Dense(n_nodes, name=self.model_name+'_fc'+str(idx)))
