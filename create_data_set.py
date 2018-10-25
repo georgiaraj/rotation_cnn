@@ -3,7 +3,7 @@
 
 from __future__ import division, print_function
 import sys, os
-import imutils, cv2
+import imutils, cv2, math
 import numpy as np
 import glob, h5py, argparse, random
 
@@ -34,8 +34,7 @@ def add_image_rotations(image):
     # Create a square image from the original image
     square_im = cv2.imread(im, cv2.IMREAD_GRAYSCALE)
     im_size = min(square_im.shape)
-    rescale_ratio = data_im_size/im_size
-    square_im = cv2.resize(square_im[:im_size,:im_size],(0,0),fx=rescale_ratio,fy=rescale_ratio)
+    square_im = square_im[:im_size,:im_size]
 
     for i in range(num_rots):
 
@@ -47,12 +46,23 @@ def add_image_rotations(image):
 
         print('Image pair',image_ind,': image',image,'rotated by',str(angle))
 
+        # Calculate the size of an image in the rotated case that removes the black regions
+        # And take this region of both images
+        im_centre = round(im_size/2)
+        valid_width = round(im_centre*math.cos(math.pi/4)) # im_centre is max diagonal distance to black region in the case of 45 degree rotation
+        rescale_ratio = data_im_size/(valid_width*2)
+
+        print('im_size:',im_size,'im_centre:',im_centre,'valid_width:',valid_width,'data_im_size:',data_im_size,'rescale_ratio:',rescale_ratio)
+
+        final_square_im = cv2.resize(square_im[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width],(0,0),fx=rescale_ratio,fy=rescale_ratio)
+        final_rotated = cv2.resize(rotated[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width],(0,0),fx=rescale_ratio,fy=rescale_ratio)
+
         # Add both images and angle label to dataset
         if save_images:
-            dset_images[:data_im_size,:,image_ind] = square_im
-            dset_images[data_im_size:,:,image_ind] = rotated
-        dset_image_data[image_ind,:data_im_size,:] = square_im
-        dset_image_data[image_ind,data_im_size:,:] = rotated
+            dset_images[:data_im_size,:,image_ind] = final_square_im
+            dset_images[data_im_size:,:,image_ind] = final_rotated
+        dset_image_data[image_ind,:data_im_size,:] = final_square_im
+        dset_image_data[image_ind,data_im_size:,:] = final_rotated
         dset_labels[image_ind] = angle
 
         image_ind+=1
@@ -99,6 +109,8 @@ if __name__ == "__main__":
         dset_images.attrs['IMAGE_VERSION'] = '1.2'
         dset_images.attrs['IMAGE_SUBCLASS'] =  'IMAGE_INDEXED'
         dset_images.attrs['IMAGE_MINMAXRANGE'] = np.array([0,255], dtype=np.uint8)
+
+    # Calculate the
 
     # Add image files to the dataset
     for idx, im in enumerate(image_files):
