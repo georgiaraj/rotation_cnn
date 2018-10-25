@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     image_size = training_images.shape[1]
 
-    cnn = rot_cnn.cnn('rot_cnn', model_file_base, image_size)
+    cnn = rot_cnn.cnn('rot_cnn', model_file_base)
 
     print(training_images.shape)
     print(training_labels.shape)

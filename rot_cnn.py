@@ -15,7 +15,7 @@ import math
 class cnn(object):
     ###############################################################################
     # Methods currently established as beta/stable
-    def __init__(self, model_name, model_path, batch_size=10, nepochs=100, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[10], padding='same'):
+    def __init__(self, model_name, model_path, batch_size=30, nepochs=200, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[10], padding='same'):
 
         if padding != 'same' and padding != 'valid':
             print('ParamError: Conv2D padding can either be \'valid\' or \'same\'.')
@@ -50,8 +50,11 @@ class cnn(object):
         images_val = np.expand_dims(images[ntrain:images.shape[0],:,:],axis=3)
         labels_val = labels[ntrain:images.shape[0]]
 
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth=True
+
         # Setup in the tensorflow session
-        sess = tf.Session()
+        sess = tf.Session(config=config)
         K.set_session(sess)
 
         # Build the graph
@@ -65,7 +68,7 @@ class cnn(object):
 
         model.summary() #print neural network summary
 
-        patience = 20
+        patience = 50
 
         # Set so that the training stops when the validation loss doesn't improve for 3 epochs
         callbacks = [
@@ -81,7 +84,9 @@ class cnn(object):
         #model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae'], options = run_opts)
         model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae'])
 
-        model.fit(images_train, labels_train, batch_size=self.batch_size, epochs=self.nepochs, validation_data=(images_val, labels_val), shuffle=True, callbacks=callbacks)
+        print('Batch size:',self.batch_size)
+
+        model.fit(images_train, labels_train, batch_size=self.batch_size, epochs=self.nepochs, validation_data=(images_val, labels_val), shuffle=False, callbacks=callbacks)
 
         # Save the model
         model.save(self.model_path)
