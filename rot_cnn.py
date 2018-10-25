@@ -15,7 +15,7 @@ import math
 class cnn(object):
     ###############################################################################
     # Methods currently established as beta/stable
-    def __init__(self, model_name, model_path, batch_size=30, nepochs=200, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[10], padding='same'):
+    def __init__(self, model_name, model_path, batch_size=30, nepochs=200, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[100], padding='same'):
 
         if padding != 'same' and padding != 'valid':
             print('ParamError: Conv2D padding can either be \'valid\' or \'same\'.')
@@ -114,6 +114,8 @@ class cnn(object):
         self.model.summary()
 
     def test(self, images):
+        # TODO probably need to break test set down into chunks for testing
+
         labels = self.model.predict(images, batch_size=self.batch_size, verbose=1)
 
         return labels
