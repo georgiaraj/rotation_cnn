@@ -15,7 +15,7 @@ import math
 class cnn(object):
     ###############################################################################
     # Methods currently established as beta/stable
-    def __init__(self, model_name, model_path, batch_size=10, nepochs=100, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0., pdrop_fc=0., fc_layers=[10], padding='same'):
+    def __init__(self, model_name, model_path, batch_size=10, nepochs=100, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[10], padding='same'):
 
         if padding != 'same' and padding != 'valid':
             print('ParamError: Conv2D padding can either be \'valid\' or \'same\'.')
@@ -65,7 +65,7 @@ class cnn(object):
 
         model.summary() #print neural network summary
 
-        patience = 3
+        patience = 20
 
         # Set so that the training stops when the validation loss doesn't improve for 3 epochs
         callbacks = [
