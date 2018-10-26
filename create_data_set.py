@@ -39,7 +39,7 @@ def add_image_rotations(image):
     for i in range(num_rots):
 
         # Generate random angle of rotation
-        angle = random.randint(0,360)
+        angle = random.randint(0,359)
 
         # Create rotated image
         rotated = imutils.rotate(square_im, angle)
@@ -51,8 +51,6 @@ def add_image_rotations(image):
         im_centre = round(im_size/2)
         valid_width = round(im_centre*math.cos(math.pi/4)) # im_centre is max diagonal distance to black region in the case of 45 degree rotation
         rescale_ratio = data_im_size/(valid_width*2)
-
-        print('im_size:',im_size,'im_centre:',im_centre,'valid_width:',valid_width,'data_im_size:',data_im_size,'rescale_ratio:',rescale_ratio)
 
         final_square_im = cv2.resize(square_im[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width],(0,0),fx=rescale_ratio,fy=rescale_ratio)
         final_rotated = cv2.resize(rotated[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width],(0,0),fx=rescale_ratio,fy=rescale_ratio)

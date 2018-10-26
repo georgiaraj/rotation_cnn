@@ -24,16 +24,6 @@ if __name__ == "__main__":
     training_images = train_data_f['image_data']
     training_labels = train_data_f['rotations']
 
-    # training_images = train_data_f['patches_data']
-    # training_images = training_images[:1000,:,:]
-    # training_labels = train_data_f['patch_offsets']
-    # training_labels = training_labels[:1000,0]
-
-    image_size = training_images.shape[1]
-
     cnn = rot_cnn.cnn('rot_cnn', model_file_base)
-
-    print(training_images.shape)
-    print(training_labels.shape)
 
     cnn.train(training_images, training_labels)

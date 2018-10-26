@@ -43,17 +43,16 @@ if __name__ == "__main__":
 
     angles = test_image_pairs(test_images, model_file_base)
 
-    # Calculate PCC for labels against returnes angles
-
+    # Calculate metrics for labels against returnes angles
     pcc = stats.pearsonr(test_labels, angles)
     rmse = math.sqrt(mse(test_labels, angles))
 
     print('Test set PCC:', pcc,'RMSE:', rmse)
 
-    # Output resulting pairs to results file
+    # Output resulting pair to results file
     f = open(results_file,'w')
 
     for idx,angle in enumerate(angles):
-        f.write(str(test_labels[idx])+' '+str(angle)+'\n')
+        f.write(str(test_labels[idx][0])+' '+str(angle[0])+'\n')
 
     f.close()

@@ -12,10 +12,16 @@ from keras import backend as K
 from keras.layers.normalization import BatchNormalization
 import math
 
+def angle_difference(x, y):
+    return 180 - abs(abs(x - y) - 180)
+
+def angle_error(y_true, y_pred):
+    return K.mean(angle_difference(y_true, y_pred))
+
 class cnn(object):
     ###############################################################################
     # Methods currently established as beta/stable
-    def __init__(self, model_name, model_path, batch_size=20, nepochs=200, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[512,256], padding='same'):
+    def __init__(self, model_name, model_path, batch_size=20, nepochs=50, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[512,512,256], padding='same'):
 
         if padding != 'same' and padding != 'valid':
             print('ParamError: Conv2D padding can either be \'valid\' or \'same\'.')
@@ -82,7 +88,7 @@ class cnn(object):
 
         #run_opts = tf.RunOptions(report_tensor_allocations_upon_oom = True)
         #model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae'], options = run_opts)
-        model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae'])
+        model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae',angle_error])
 
         print('Batch size:',self.batch_size)
 
@@ -91,8 +97,6 @@ class cnn(object):
         # Save the model
         model.save(self.model_path)
         print('Saved trained model to',self.model_path)
-
-        #sess.close()
 
     def is_trained(self):
         if os.path.isfile(self.model_path):
