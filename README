@@ -23,4 +23,4 @@ python3 train_rot_cnn.py --train_data_file $TRAIN_DATASET --output_model_base $M
 python3 test_data_set.py --test_data_file $TEST_DATASET --model_base $MODEL_BASE --results_file rests.csv
 
 # Test a single image pair
-python3 test_one_pair.py --first_image $IMAGE1 --second_image $IMAGE2 --data_im_size $IM_SIZE --output_model_base $MODEL_BASE
+python3 test_one_pair.py --first_image $IMAGE1 --second_image $IMAGE2 --data_im_size $IM_SIZE --model_base $MODEL_BASE
