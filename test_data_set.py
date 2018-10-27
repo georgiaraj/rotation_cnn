@@ -5,6 +5,7 @@ import numpy as np
 import argparse, h5py, math
 import scipy.stats as stats
 from sklearn.metrics import mean_squared_error as mse
+import matplotlib.pyplot as plt
 
 import rot_cnn
 
@@ -15,7 +16,7 @@ def get_arguments():
     parser.add_argument('--results_file', type=str, required=True, help='Results file to save comparison true and predicted labels.')
     return parser.parse_args()
 
-def test_image_pairs(image_pairs, output_model_base):
+def test_image_pairs(image_pairs, model_file_base):
 
     cnn = rot_cnn.cnn('rot_cnn', model_file_base)
 
@@ -25,7 +26,7 @@ def test_image_pairs(image_pairs, output_model_base):
     cnn.set_session()
     cnn.load_model()
 
-    # TODO Check size of image pairs matches that for trained CNN
+    # Check size of image pairs matches that for trained CNN
 
     return cnn.test(image_pairs)
 
@@ -47,7 +48,25 @@ if __name__ == "__main__":
     pcc = stats.pearsonr(test_labels, angles)
     rmse = math.sqrt(mse(test_labels, angles))
 
-    print('Test set PCC:', pcc,'RMSE:', rmse)
+    print('Test set PCC:', pcc[0],'RMSE:', rmse)
+
+    errors = abs(test_labels-angles)
+
+    # Plot histogram of errors for different angles
+    hist = np.histogram(errors, 36)
+    n, bins, patches = plt.hist(errors, bins='auto', color='#0504aa',
+                                alpha=0.7, rwidth=0.85)
+    plt.grid(axis='y', alpha=0.75)
+    plt.xlim([0,100])
+    plt.xlabel('Angle Error')
+    plt.xticks(np.arange(0,100,5), fontsize=6)
+    plt.ylabel('Frequency of Errors')
+    plt.title('Error Distribution')
+    maxfreq = n.max()
+    # Set a clean upper y-axis limit.
+    plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
+
+    plt.savefig(results_file.replace('.csv','jpg'))
 
     # Output resulting pair to results file
     f = open(results_file,'w')
