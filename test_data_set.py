@@ -47,19 +47,21 @@ if __name__ == "__main__":
     # Calculate metrics for labels against returnes angles
     pcc = stats.pearsonr(test_labels, angles)
     rmse = math.sqrt(mse(test_labels, angles))
+    ad = np.mean(rot_cnn.angle_difference(test_labels, angles))
 
-    print('Test set PCC:', pcc[0],'RMSE:', rmse)
+    print('Test set PCC:', pcc[0],'RMSE:', rmse, 'AD:', ad)
 
-    errors = abs(test_labels-angles)
+    errors = np.array(test_labels-angles)
+    errors = np.sign(errors)*rot_cnn.angle_difference(test_labels, angles)
 
     # Plot histogram of errors for different angles
     hist = np.histogram(errors, 36)
-    n, bins, patches = plt.hist(errors, bins='auto', color='#0504aa',
+    n, bins, patches = plt.hist(errors, bins=36, color='#0504aa',
                                 alpha=0.7, rwidth=0.85)
     plt.grid(axis='y', alpha=0.75)
-    plt.xlim([0,100])
+    plt.xlim([-180,180])
     plt.xlabel('Angle Error')
-    plt.xticks(np.arange(0,100,5), fontsize=6)
+    plt.xticks(np.arange(-180,180,30), fontsize=6)
     plt.ylabel('Frequency of Errors')
     plt.title('Error Distribution')
     maxfreq = n.max()
