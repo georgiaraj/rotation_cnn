@@ -26,8 +26,6 @@ def test_image_pairs(image_pairs, model_file_base):
     cnn.set_session()
     cnn.load_model()
 
-    # Check size of image pairs matches that for trained CNN
-
     return cnn.test(image_pairs)
 
 ### Main function ###

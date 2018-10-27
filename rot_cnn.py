@@ -171,17 +171,6 @@ class cnn(object):
         if self.pdrop_conv > 0.:
             model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop3'))
 
-        # model.add(Conv2D(64, (5, 5), padding=padding, name=self.model_name+'_conv7'))
-        # if self.use_bn:
-        #     model.add(BatchNormalization(name=self.model_name+'_bn7'))
-        # model.add(Activation('relu', name=self.model_name+'_act7'))
-        # model.add(Conv2D(64, (5, 5), padding=padding, name=self.model_name+'_conv8'))
-        # if self.use_bn:
-        #     model.add(BatchNormalization(name=self.model_name+'_bn8'))
-        # model.add(Activation('relu', name=self.model_name+'_act8'))
-        # if self.pdrop_conv > 0.:
-        #     model.add(Dropout(self.pdrop_conv, name=self.model_name+'_drop4'))
-
         # Dense fully connected layers
         model.add(Flatten(name=self.model_name+'_flat1'))
 
