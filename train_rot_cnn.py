@@ -9,6 +9,7 @@ def get_arguments():
     parser = argparse.ArgumentParser(description='Trains a rotation CNN on the given training data HDF5 file.')
     parser.add_argument('--train_data_file', type=str, required=True, help='Training dataset HDF5 file (generated via create_data_set.py).')
     parser.add_argument('--output_model_base', type=str, required=True, help='Base for output file for model')
+    parser.add_argument('--retrain', action='store_true', help='Model will be trained even if it already exists.')
 
     return parser.parse_args()
 
@@ -20,10 +21,15 @@ if __name__ == "__main__":
 
     model_file_base = args.output_model_base
     train_data_f = h5py.File(args.train_data_file,'r')
+    retrain = args.retrain
 
     training_images = train_data_f['image_data']
     training_labels = train_data_f['rotations']
 
     cnn = rot_cnn.cnn('rot_cnn', model_file_base)
+
+    if cnn.is_trained() and not retrain:
+        print('Warning: model already trained. If retraining required, use --retrain flag.')
+        sys.exit(0)
 
     cnn.train(training_images, training_labels)
