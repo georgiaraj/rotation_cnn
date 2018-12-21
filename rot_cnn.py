@@ -11,21 +11,27 @@ from keras.callbacks import EarlyStopping
 from keras import backend as K
 from keras.layers.normalization import BatchNormalization
 import keras.metrics
+from keras.utils.generic_utils import get_custom_objects
+
 import math
 
 def angle_difference(x, y):
     return 180 - abs(abs(x - y) - 180)
 
 def angle_error(y_true, y_pred):
-    return K.mean(angle_difference(y_true, y_pred))
+    return K.mean(K.abs(angle_difference(y_true, y_pred)), axis=-1)
 
 def angle_square_error(y_true, y_pred):
-    return K.mean(K.square(angle_difference(y_true, y_pred)))
+    return K.mean(K.square(angle_difference(y_true, y_pred)), axis=-1)
+
+# Create a new activation that caps the output at 359
+def linear_angle_activation(x):
+    return K.switch(x < 360, x, x*0)
 
 class cnn(object):
     ###############################################################################
     # Methods currently established as beta/stable
-    def __init__(self, model_name, model_path, batch_size=20, nepochs=200, use_bn=True, lr=0.1, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[512,512,256], padding='same'):
+    def __init__(self, model_name, model_path, batch_size=20, nepochs=200, use_bn=True, lr=0.01, decay=1e-5, pdrop_conv=0.25, pdrop_fc =0.5, fc_layers=[512,512,256], padding='same'):
 
         if padding != 'same' and padding != 'valid':
             print('ParamError: Conv2D padding can either be \'valid\' or \'same\'.')
@@ -63,6 +69,8 @@ class cnn(object):
         config = tf.ConfigProto()
         config.gpu_options.allow_growth=True
 
+        get_custom_objects().update({'linear_angle_activation': Activation(linear_angle_activation)})
+
         # Setup in the tensorflow session
         sess = tf.Session(config=config)
         K.set_session(sess)
@@ -90,7 +98,7 @@ class cnn(object):
         print('Using Adam optimizer')
         print(opt.get_config())
 
-        model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae',angle_error])
+        model.compile(loss=angle_square_error, optimizer=opt, metrics=['mae',angle_error])
 
         print('Batch size:',self.batch_size)
 
@@ -115,7 +123,7 @@ class cnn(object):
     def load_model(self):
 
         # Load model parameters
-        self.model = load_model(self.model_path, custom_objects={'angle_error':angle_error})
+        self.model = load_model(self.model_path, custom_objects={'angle_error':angle_error, 'angle_square_error':angle_square_error, 'linear_angle_activation':linear_angle_activation})
 
     def summary(self):
         self.model.summary()
@@ -183,6 +191,7 @@ class cnn(object):
                 model.add(Dropout(self.pdrop_fc, name=self.model_name+'_drop_fc'+str(idx)))
 
         model.add(Dense(1, name=self.model_name+'_output'))
-        model.add(Activation('linear', name=self.model_name+'_act_out'))
+        model.add(Activation(linear_angle_activation, name=self.model_name+'_act_out'))
+        #model.add(Activation('linear', name=self.model_name+'_act_out'))
 
         return model

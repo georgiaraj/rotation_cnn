@@ -42,6 +42,8 @@ if __name__ == "__main__":
 
     angles = test_image_pairs(test_images, model_file_base)
 
+    angles[angles < 0] = 360+angles[angles<0]
+
     # Calculate metrics for labels against returnes angles
     pcc = stats.pearsonr(test_labels, angles)
     rmse = math.sqrt(mse(test_labels, angles))
