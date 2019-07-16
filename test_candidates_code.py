@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys, os
+import sys, os, cv2, time
 import numpy as np
 import argparse, h5py, math
 import scipy.stats as stats
@@ -8,6 +8,9 @@ from sklearn.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
 
 from getrotation import get_rotation
+
+def angle_difference(x, y):
+    return 180 - abs(abs(x - y) - 180)
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='Takes a pair of images and tests against a trained rotation CNN, returning the angle between them.')
@@ -20,30 +23,32 @@ if __name__ == "__main__":
     # Parse console and print messages
     args = get_arguments()
 
-    model_file_base = args.model_base
     test_data_f = h5py.File(args.test_data_file,'r')
     results_file = args.results_file
 
-    test_images = test_data_f['images']
+    test_images = test_data_f['images_rgb']
     test_labels = test_data_f['rotations']
 
-    angles = []
-    for idx in test_images.shape[0]:
-        im1 = im_pair[:100,:,idx]
-        im2 = im_pair[100:,:,idx]
-        angles = angles.append(get_rotation(im1,im2))
+    angles = np.empty(shape=(test_images.shape[3],1))
+    for idx in range(test_images.shape[3]):
+        im1 = test_images[:100,:,:,idx]
+        im2 = test_images[100:,:,:,idx]
+        angles[idx] = get_rotation(im1,im2)
 
     angles[angles < 0] = 360+angles[angles<0]
+
+    print(angles.shape)
+    print(test_labels.shape)
 
     # Calculate metrics for labels against returnes angles
     pcc = stats.pearsonr(test_labels, angles)
     rmse = math.sqrt(mse(test_labels, angles))
-    ad = np.mean(rot_cnn.angle_difference(test_labels, angles))
+    ad = np.mean(angle_difference(test_labels, angles))
 
     print('Test set PCC:', pcc[0],'RMSE:', rmse, 'AD:', ad)
 
     errors = np.array(test_labels-angles)
-    errors = np.sign(errors)*rot_cnn.angle_difference(test_labels, angles)
+    errors = np.sign(errors)*angle_difference(test_labels, angles)
 
     # Plot histogram of errors for different angles
     hist = np.histogram(errors, 36)
