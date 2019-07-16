@@ -3,15 +3,15 @@
 import sys, os
 import numpy as np
 import tensorflow as tf
-import keras
-from keras.models import Sequential, load_model
-from keras.layers import Dense, Conv2D, MaxPooling2D
-from keras.layers import Flatten, Dropout, Activation
-from keras.callbacks import EarlyStopping
-from keras import backend as K
-from keras.layers.normalization import BatchNormalization
-import keras.metrics
-from keras.utils.generic_utils import get_custom_objects
+import tensorflow.keras as keras
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D
+from tensorflow.keras.layers import Flatten, Dropout, Activation
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import BatchNormalization
+import tensorflow.keras.metrics
+from tensorflow.keras.utils import get_custom_objects
 
 import math
 

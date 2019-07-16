@@ -28,12 +28,15 @@ def add_image_rotations(image):
     # Increase the dataset size according to the number of patches returned
     if save_images:
         dset_images.resize(dset_images.shape[2]+num_rots, axis=2)
+        dset_images_rgb.resize(dset_images_rgb.shape[3]+num_rots, axis=3)
     dset_image_data.resize(dset_image_data.shape[0]+num_rots, axis=0)
     dset_labels.resize(dset_labels.shape[0]+num_rots, axis=0)
 
     # Create a square image from the original image
+    square_im_rgb = cv2.imread(im, cv2.IMREAD_COLOR)
     square_im = cv2.imread(im, cv2.IMREAD_GRAYSCALE)
     im_size = min(square_im.shape)
+    square_im_rgb = square_im_rgb[:im_size,:im_size,:]
     square_im = square_im[:im_size,:im_size]
 
     for i in range(num_rots):
@@ -43,6 +46,7 @@ def add_image_rotations(image):
 
         # Create rotated image
         rotated = imutils.rotate(square_im, angle)
+        rotated_rgb = imutils.rotate(square_im_rgb, angle)
 
         print('Image pair',image_ind,': image',image,'rotated by',str(angle))
 
@@ -55,10 +59,15 @@ def add_image_rotations(image):
         final_square_im = cv2.resize(square_im[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width],(0,0),fx=rescale_ratio,fy=rescale_ratio)
         final_rotated = cv2.resize(rotated[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width],(0,0),fx=rescale_ratio,fy=rescale_ratio)
 
+        final_square_im_rgb = cv2.resize(square_im_rgb[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width,:],(0,0),fx=rescale_ratio,fy=rescale_ratio)
+        final_rotated_rgb = cv2.resize(rotated_rgb[im_centre-valid_width:im_centre+valid_width,im_centre-valid_width:im_centre+valid_width,:],(0,0),fx=rescale_ratio,fy=rescale_ratio)
+
         # Add both images and angle label to dataset
         if save_images:
             dset_images[:data_im_size,:,image_ind] = final_square_im
             dset_images[data_im_size:,:,image_ind] = final_rotated
+            dset_images_rgb[:data_im_size,:,:,image_ind] = final_square_im_rgb
+            dset_images_rgb[data_im_size:,:,:,image_ind] = final_rotated_rgb
         dset_image_data[image_ind,:data_im_size,:] = final_square_im
         dset_image_data[image_ind,data_im_size:,:] = final_rotated
         dset_labels[image_ind] = angle
@@ -102,14 +111,22 @@ if __name__ == "__main__":
 
     if save_images:
         dset_images = f.create_dataset("images",(data_im_size*2,data_im_size,0),maxshape=(data_im_size*2,data_im_size,None))
+        dset_images_rgb = f.create_dataset("images_rgb",(data_im_size*2,data_im_size,3,0),maxshape=(data_im_size*2,data_im_size,3,None))
         # Set the image attributes
         dset_images.attrs['CLASS'] = 'IMAGE'
         dset_images.attrs['IMAGE_VERSION'] = '1.2'
         dset_images.attrs['IMAGE_SUBCLASS'] =  'IMAGE_INDEXED'
         dset_images.attrs['IMAGE_MINMAXRANGE'] = np.array([0,255], dtype=np.uint8)
+        dset_images_rgb.attrs['CLASS'] = 'IMAGE'
+        dset_images_rgb.attrs['IMAGE_VERSION'] = '1.2'
+        dset_images_rgb.attrs['IMAGE_SUBCLASS'] = 'IMAGE_TRUECOLOR'
+        dset_images_rgb.attrs['INTERLACE_MODE'] = 'INTERLACE_PIXEL'
+        dset_images_rgb.attrs['IMAGE_MINMAXRANGE'] = np.array([0,255], dtype=np.uint8)
 
     # Calculate the
 
     # Add image files to the dataset
     for idx, im in enumerate(image_files):
         add_image_rotations(im)
+        #if idx == 5:
+        #    break
